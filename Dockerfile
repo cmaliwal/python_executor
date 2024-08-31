@@ -1,6 +1,8 @@
 # Use an official Python image as a base
 FROM python:3.10-slim
 
+# Set environment variables
+ENV PYTHONUNBUFFERED 1
 
 # Install necessary packages
 RUN apt-get update && apt-get install -y \
@@ -23,6 +25,9 @@ RUN rm -rf /var/lib/apt/lists/*
 
 # Clone and build nsjail
 RUN git clone https://github.com/google/nsjail /nsjail && cd /nsjail && make -j$(nproc)
+
+# Copy nsjail binary to a directory in the PATH
+RUN cp /nsjail/nsjail /usr/local/bin/nsjail
 
 # Set the working directory
 WORKDIR /app

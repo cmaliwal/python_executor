@@ -1,46 +1,33 @@
 import json
 import os
 import subprocess
-
+import tempfile
 from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
-
 def run_script(script):
-    script_file = "/tmp/user_script.py"
-    with open(script_file, "w") as f:
-        f.write(script)
+    with tempfile.NamedTemporaryFile(suffix=".py", delete=False) as temp_script:
+        script_file = temp_script.name
+        temp_script.write(script.encode())
 
     try:
         result = subprocess.run(
-            [
-                "nsjail",
-                "--quiet",
-                "-Mo",
-                "--chroot",
-                "/",
-                "--user",
-                "65534",
-                "--group",
-                "65534",
-                "--",
-                "python3",
-                script_file,
-            ],
-            check=True,
-            capture_output=True,
-            text=True,
-            timeout=10,
+            ['nsjail', '--config', '/etc/nsjail/nsjail.cfg', '--', '/usr/local/bin/python3', script_file],
+            capture_output=True, text=True, timeout=10
         )
+
+        if result.returncode != 0:
+            return result.stderr, 400
 
         return result.stdout
 
-    except subprocess.CalledProcessError as e:
-        return str(e), 400
     except subprocess.TimeoutExpired:
+        os.remove(script_file)
         return "Execution timeout", 400
 
+    finally:
+        os.remove(script_file)
 
 @app.route("/execute", methods=["POST"])
 def execute():
@@ -58,7 +45,6 @@ def execute():
         return jsonify({"error": "The main() function must return valid JSON."}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)

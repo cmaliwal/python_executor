@@ -26,13 +26,17 @@ http://localhost:8080/
 - Success:
     ```json
     {
-        "status": "ok",
-        "message": "Test script executed successfully",
-        "data": {
-            "value1": 123,
-            "value2": "abc",
-            "value3": [1, 2, 3]
-        }
+    "data": {
+        "value1": 123,
+        "value2": "abc",
+        "value3": [
+            1,
+            2,
+            3
+        ]
+    },
+    "message": "Test script executed successfully",
+    "status": "ok"
     }
 
 - Error

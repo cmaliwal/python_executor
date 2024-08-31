@@ -33,7 +33,7 @@ This project is a Flask API that securely runs Python scripts using NSJail.
 4. Run the application locally:
 
     ```bash
-    docker run -p 8080:8080 python-executor
+    docker run --privileged -p 8080:8080 python-executor
     ```
 
 ## Deploying to Google Cloud Run
