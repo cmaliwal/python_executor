@@ -18,13 +18,13 @@ def run_script(script):
         )
 
         if result.returncode != 0:
-            return result.stderr, 400
+            return None, result.stderr
 
-        return result.stdout
+        return result.stdout, None
 
     except subprocess.TimeoutExpired:
         os.remove(script_file)
-        return "Execution timeout", 400
+        return None, "Execution timeout"
 
     finally:
         os.remove(script_file)
@@ -37,8 +37,15 @@ def execute():
     if "def main()" not in script:
         return jsonify({"error": "No main() function found in the script."}), 400
 
+    if "import json" not in script:
+        script = "import json\n" + script
+
+    output, error = run_script(script)
+    
+    if error:
+        return jsonify({"error": error}), 400
+
     try:
-        output = run_script(script)
         result = json.loads(output)
         return jsonify(result)
     except json.JSONDecodeError:

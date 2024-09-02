@@ -16,21 +16,13 @@ This project is a Flask API that securely runs Python scripts using NSJail.
     cd python_executor
     ```
 
-2. Build the NSJail Docker image:
-
-    ```bash
-    cd nsjail
-    docker build -t nsjailcontainer .
-    cd ..
-    ```
-
-3. Build the Flask application Docker image:
+2. Build the Flask application Docker image:
 
     ```bash
     docker build -t python-executor .
     ```
 
-4. Run the application locally:
+3. Run the application locally:
 
     ```bash
     docker run --privileged -p 8080:8080 python-executor
@@ -53,13 +45,23 @@ This project is a Flask API that securely runs Python scripts using NSJail.
 
 ## Using the API
 
-Once deployed, you can send a POST request to the `/run` endpoint with your Python script to execute it securely.
+Once deployed, you can send a POST request to the `/execute` endpoint with your Python script to execute it securely.
 
-Example request:
+Example requests:
+
+### Example Request 1: Basic Arithmetic Operations
 
 ```json
 {
-    "script": "import json\n\ndef main():\n    result = {\n        \"status\": \"ok\",\n        \"message\": \"Test script executed successfully\",\n        \"data\": {\n            \"value1\": 123,\n            \"value2\": \"abc\",\n            \"value3\": [1, 2, 3]\n        }\n    }\n    return json.dumps(result)\n\nif __name__ == \"__main__\":\n    output = main()\n    print(output)"
+    "script": "import json\n\ndef main():\n    result = {\n        \"status\": \"success\",\n        \"operation\": \"math_operations\",\n        \"data\": {\n            \"sum\": 10 + 5,\n            \"difference\": 10 - 5,\n            \"product\": 10 * 5,\n            \"quotient\": 10 / 5\n        }\n    }\n    return json.dumps(result)\n\nif __name__ == \"__main__\":\n    output = main()\n    print(output)"
+}
+```
+
+### Example Request 2: List Processing
+
+```json
+{
+    "script": "import json\n\ndef main():\n    numbers = [5, 10, 15, 20, 25]\n    result = {\n        \"status\": \"success\",\n        \"operation\": \"list_processing\",\n        \"data\": {\n            \"numbers\": numbers,\n            \"sum\": sum(numbers),\n            \"max_value\": max(numbers),\n            \"min_value\": min(numbers)\n        }\n    }\n    return json.dumps(result)\n\nif __name__ == \"__main__\":\n    output = main()\n    print(output)"
 }
 ```
 
