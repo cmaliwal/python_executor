@@ -6,6 +6,21 @@ from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
+def prepare_script(script):
+    if "import json" not in script:
+        script = "import json\n" + script
+
+    if "main()" in script and "output = main()" not in script:
+        if "print(main())" in script or "main()" in script.splitlines():
+            script = script.replace("print(main())", "output = main()\n    print(output)")
+            script = script.replace("main()", "output = main()\n    print(output)")
+        else:
+            script += "\n\nif __name__ == \"__main__\":\n    output = main()\n    print(output)"
+    elif "if __name__ == \"__main__\":" not in script:
+        script += "\n\nif __name__ == \"__main__\":\n    output = main()\n    print(output)"
+
+    return script
+
 def run_script(script):
     with tempfile.NamedTemporaryFile(suffix=".py", delete=False) as temp_script:
         script_file = temp_script.name
@@ -18,13 +33,16 @@ def run_script(script):
         )
 
         if result.returncode != 0:
-            return None, result.stderr
+            return None, result.stderr, None
 
-        return result.stdout, None
+        stdout_lines = result.stdout.strip().split("\n")
+        stdout_capture = "\n".join(stdout_lines[:-1])
+        main_output = stdout_lines[-1] if stdout_lines else ""
 
+        return main_output, stdout_capture, None
     except subprocess.TimeoutExpired:
         os.remove(script_file)
-        return None, "Execution timeout"
+        return None, None, "Execution timeout"
 
     finally:
         os.remove(script_file)
@@ -37,18 +55,17 @@ def execute():
     if "def main()" not in script:
         return jsonify({"error": "No main() function found in the script."}), 400
 
-    if "import json" not in script:
-        script = "import json\n" + script
+    script = prepare_script(script)
 
-    output, error = run_script(script)
-    
+    main_output, stdout_capture, error = run_script(script)
+
     if error:
         return jsonify({"error": error}), 400
 
     try:
-        result = json.loads(output)
-        return jsonify(result)
-    except json.JSONDecodeError:
+        result = json.loads(main_output)
+        return jsonify({"result": result, "stdout": stdout_capture})
+    except json.JSONDecodeError as e:
         return jsonify({"error": "The main() function must return valid JSON."}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
